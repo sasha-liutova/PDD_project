@@ -45,3 +45,4 @@ for snippet in snippets:
 # cursor.close()
 # cnx.close()
 
+print('THIS IS A TEST CHANGE')
