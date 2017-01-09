@@ -6,29 +6,43 @@ import pickle
 
 
 def load_data(filename):
+    """
+    Loads data from file
+    """
     data = pickle.load(open(filename, "rb"))
     return data
 
 
 def cluster_k_means(data, n_clusters):
+    """
+    Performs K-Means clustering on data
+    :return: list of labels
+    """
     kmeans = KMeans(n_clusters=n_clusters)
     labels = kmeans.fit_predict(data)
     return labels
 
 
-def cluster_agglomerative(data, n_clusters):
-    cl = AgglomerativeClustering(compute_full_tree=False, n_clusters=n_clusters)
-    labels = cl.fit_predict(data)
-    return labels
-
-
 def cluster_DBSCAN(data):
+    """
+    Performs DBSCAN clustering on data
+    :return: list of labels
+    """
     dbscan = DBSCAN()
     labels = dbscan.fit_predict(data)
     return labels
 
 
 def save_clustered_snippets(snippets, labels, n_clusters, filename):
+    """
+    Saves clustered snippets to file for possible further analysis.
+    Snippets are ordered by their cluster.
+    :param snippets:
+    :param labels:
+    :param n_clusters: number of clusters
+    :param filename: destination file name
+    :return:
+    """
 
     if n_clusters is None:
         # calculate how many clusters there are
@@ -59,21 +73,27 @@ def save_clustered_snippets(snippets, labels, n_clusters, filename):
 
 
 def reduce_dimensionality(data):
+    """
+    Reduces dimensionality of data to 2D for visualisation purposes
+    """
     model = TSNE(n_components=2)
-    transformed_data = model.fit_transform(data)
+    transformed_data = model.fit_transform(data.toarray())
     return transformed_data
 
 
-def visualise(data, labels, n_clusters):
+def visualise(data, labels):
+    """
+    Plots a graph, where each point represents a snippet from data and
+    is positioned in 2D space and colored according to its cluster.
+    """
 
-    if n_clusters is None:
-        # calculate how many clusters there are
-        unique_labels = []
-        for l in labels:
-            if not l in unique_labels:
-                unique_labels.append(l)
-        n_clusters = len(unique_labels)
-        print('# of clusters: ', n_clusters)
+    # calculate how many clusters there are
+    unique_labels = []
+    for l in labels:
+        if not l in unique_labels:
+            unique_labels.append(l)
+    n_clusters = len(unique_labels)
+    print('# of clusters: ', n_clusters)
 
     # normalizing clusters' numbers fo colors assigning
     minimum = min(unique_labels)
@@ -104,8 +124,13 @@ def visualise(data, labels, n_clusters):
 
 if __name__ == "__main__":
     n_clusters = 10
-    features, snippets = load_data('features_?.py'), load_data('snippets.py')
+    print('Loading data from files...')
+    features, snippets = load_data('features_bag_of_words.dat'), load_data('snippets.dat')
+    print('Performing clustering...')
     labels = cluster_k_means(features, n_clusters)
-    save_clustered_snippets(snippets, labels, n_clusters, 'clusters_KMeans_1.py')
+    print('Saving clustered data...')
+    save_clustered_snippets(snippets, labels, n_clusters, 'clusters_KMeans_1.txt')
+    print('Transforming data to 2D space...')
     transformed_features = reduce_dimensionality(features)
-    visualise(transformed_features, labels, n_clusters)
+    print('Visualizing data...')
+    visualise(transformed_features, labels)
