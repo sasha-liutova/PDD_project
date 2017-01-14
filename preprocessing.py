@@ -4,58 +4,57 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from time import time
 
 
-def execute_query(query_text):
+def load_snippets(query_text):
     """
-    Executes a query specified in query_text.
+    Retrieves posts from database and extracts meaningful snippets
     :param query_text:
-    :return: a list of posts - result of query execution
+    :return: a list of snippets
     """
     cnx = mysql.connector.connect(user='so', password='mnanenatomamavychovalaabysomsedelvbaseodveceradorana',
                                   host='52.214.158.93', database='so')
     cursor = cnx.cursor()
     cursor.execute(query_text)
-    print('Query executed. Postprocessing is performed...')
-    posts, i = [], 0
+    snippets, i = [], 0
     time0 = time()
     for post in cursor:
-        posts.append(post[0])
+        snippets_current = extract_code(post[0])
+        for snippet in snippets_current:
+            if is_meaningful(snippet):
+                snippets.append(snippet)
         i += 1
         if i % 10000 == 0:
             print(i, ' posts processed, ', (time()-time0)/(i/10000), ' s')
+        # if i % 130000 == 0:
+        #     save_data(snippets, 'snippets' + str(i/130000) + '.dat')
+        #     print('snippets' + str(i/130000) + '.dat saved')
+        #     snippets = []
 
-    print('Number of posts retrieved: ', len(posts))
+    print('Number of posts retrieved: ', i, ', number of snippets: ', len(snippets))
     cursor.close()
     cnx.close()
-    return posts
+    return snippets
 
 
-def extract_code(posts):
+def extract_code(post):
     """
-    Extracts snippets from posts.
+    Extracts snippets from post.
     """
     start_str, end_str = '<code>', '</code>'
     snippets = []
-    for text in posts:
-        start = text.find(start_str)
-        while start >= 0:
-            start += len(start_str)
-            end = text.find(end_str, start)
-            if end > 0:
-                snippets.append(text[start : end].replace('&#xA;', '\n'))
-            start = text.find(start_str, end)
+    start = post.find(start_str)
+    while start >= 0:
+        start += len(start_str)
+        end = post.find(end_str, start)
+        if end > 0:
+            snippets.append(post[start : end].replace('&#xA;', '\n'))
+        start = post.find(start_str, end)
     return snippets
 
 
-def filter_meaningful_snippets(snippets):
-    filtered = []
-    for snippet in snippets:
-        if len(snippet) > 20:
-            filtered.append(snippet)
-    return filtered
-
-
-def filter_js(snippets):
-    return snippets
+def is_meaningful(snippet):
+    if len(snippet) > 20:
+            return True
+    return False
 
 
 def is_letter(character):
@@ -115,13 +114,7 @@ def save_data(data, filename):
 if __name__ == "__main__":
 
     print('Retrieving data from database...')
-    posts = execute_query("SELECT Body FROM js_posts_full")
-    print('Extracting snippets from posts...')
-    raw_snippets = extract_code(posts)
-    print('Extracting meaningful snippets...')
-    meaningful_snippets = filter_meaningful_snippets(raw_snippets)
-    print('Extracting JS snippets...')
-    snippets = filter_js(meaningful_snippets)
+    snippets = load_snippets("SELECT Body FROM js_posts_full")
     print('Saving snippets...')
     save_data(snippets, 'snippets.dat')
     print('Extracting features from snippets...')

@@ -1,16 +1,20 @@
-from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+from sklearn.cluster import KMeans, DBSCAN, MiniBatchKMeans
 from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt
 import numpy as np
 import pickle
+from sklearn.decomposition import PCA, TruncatedSVD
 
 
-def load_data(filename):
+def load_data(filename, n_snippets):
     """
-    Loads data from file
+    Loads 'percentage' % of data from file
     """
     data = pickle.load(open(filename, "rb"))
-    return data
+    # length = int(len(data) * percentage)
+    # data_reduced = data[: int(len(data) * percentage)]
+    data_reduced = data[: n_snippets]
+    return data_reduced
 
 
 def cluster_k_means(data, n_clusters):
@@ -23,12 +27,23 @@ def cluster_k_means(data, n_clusters):
     return labels
 
 
-def cluster_DBSCAN(data):
+def cluster_minibatchkmeans(data, n_clusters):
+    """
+    Performs MiniBatchKMeans clustering on data
+    :return: list of labels
+    """
+    km = MiniBatchKMeans(n_clusters=n_clusters, init='k-means++', n_init=3,
+                         init_size=1000, batch_size=1000)
+    labels = km.fit_predict(data)
+    return labels
+
+
+def cluster_DBSCAN(data, eps):
     """
     Performs DBSCAN clustering on data
     :return: list of labels
     """
-    dbscan = DBSCAN()
+    dbscan = DBSCAN(eps=eps, min_samples=5)
     labels = dbscan.fit_predict(data)
     return labels
 
@@ -77,7 +92,7 @@ def reduce_dimensionality(data):
     Reduces dimensionality of data to 2D for visualisation purposes
     """
     model = TSNE(n_components=2)
-    transformed_data = model.fit_transform(data.toarray())
+    transformed_data = model.fit_transform(data)
     return transformed_data
 
 
@@ -109,8 +124,7 @@ def visualise(data, labels):
               '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
     if n_clusters > len(colors):
         color = iter(plt.cm.rainbow(np.linspace(0, 1, n_clusters)))
-        colors = []
-        for i in range(n_clusters):
+        for i in range(n_clusters - len(colors)):
             c = next(color)
             colors.append(c)
 
@@ -121,16 +135,37 @@ def visualise(data, labels):
     plt.show()
 
 
+def apply_TruncatedSVD(data):
+    svd = TruncatedSVD(n_components=10, n_iter=7, random_state=42)
+    return svd.fit_transform(data)
+    # print(svd.explained_variance_ratio_)
+    # print(svd.explained_variance_ratio_.sum())
+
+
 
 if __name__ == "__main__":
-    n_clusters = 10
+    n_clusters, n_snippets = 10, 100000
+    eps = 20
+
     print('Loading data from files...')
-    features, snippets = load_data('features_bag_of_words.dat'), load_data('snippets.dat')
+    features = load_data('features_bag_of_words.dat', n_snippets)
+    snippets = load_data('snippets.dat', n_snippets)
+
     print('Performing clustering...')
-    labels = cluster_k_means(features, n_clusters)
+    # labels = cluster_minibatchkmeans(features, n_clusters)
+    # pickle.dump(labels, open('labels_BoW_minibatchKM_' + str(n_snippets) + '_' + str(n_clusters) + '.dat', "wb"))
+    labels = pickle.load(open('labels_BoW_minibatchKM_' + str(n_snippets) + '_' + str(n_clusters) + '.dat', "rb"))
+
     print('Saving clustered data...')
-    save_clustered_snippets(snippets, labels, n_clusters, 'clusters_KMeans_1.txt')
+    save_clustered_snippets(snippets, labels, n_clusters, 'clusters_BoW_minibatchKM_' + str(n_snippets) + '_' + str(n_clusters) + '.txt')
+
+    print('Applying Truncated SVD...')
+    reduced_features = apply_TruncatedSVD(features)
+
     print('Transforming data to 2D space...')
-    transformed_features = reduce_dimensionality(features)
+    transformed_features = reduce_dimensionality(reduced_features)
+    pickle.dump(transformed_features, open('data_vizual_BoW_' + str(n_snippets) + '.dat', "wb"))
+    # transformed_features = pickle.load(open('data_vizual_BoW_' + str(n_snippets) + '.dat', "rb"))
+
     print('Visualizing data...')
     visualise(transformed_features, labels)
