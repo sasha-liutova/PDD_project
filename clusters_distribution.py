@@ -32,3 +32,31 @@ if __name__ == "__main__":
     distribution = get_distribution(labels)
     for a in distribution:
         print(a)
+
+    # labels = pickle.load(open('data/labels_BoW_40.dat', "rb"))
+    # snippets = pickle.load(open('data/snippets.dat', "rb"))
+    # print(Counter(labels))
+    # clusters = [38, 35, 34, 31, 30, 28, 27, 22, 21, 16, 15, 14, 13, 12, 8, 7, 5, 4, 3, 2, 1]
+    # text=''
+    # for label in clusters:
+    #     index = numpy.where(labels == label)[0][0]
+    #     snippet = snippets[index]
+    #     text += snippet + '\n' + separator
+    # n_lines = text.count('\n')
+    # print('# lines: ', n_lines, ', # snippets: ', len(clusters), ', # lines per snippet: ', n_lines/len(clusters))
+    # with open('data/single_snippet_clusters.txt', mode='w', encoding='utf-8') as a_file:
+    #      a_file.write(text)
+
+
+    # labels = pickle.load(open('data/labels_tf_idf_40.dat', "rb"))
+    # snippets = pickle.load(open('data/snippets.dat', "rb"))
+    # print(Counter(labels))
+    # label = 38
+    # text = ''
+    # indexes = numpy.where(labels == label)[0]
+    # for index in indexes:
+    #     snippet = snippets[index]
+    #     text += snippet + '\n' + separator
+    # n_lines = text.count('\n')
+    # with open('data/content_analysis_tfidf_40.txt', mode='w', encoding='utf-8') as a_file:
+    #     a_file.write(text)
